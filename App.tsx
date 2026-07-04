@@ -7,7 +7,7 @@ import { History } from './components/History';
 import { Notebook } from './components/Notebook';
 import { Dashboard } from './components/Dashboard';
 import Auth from './components/Auth';
-import { generateConversationOverview } from './services/summaryService';
+import { generateSessionAnalysis } from './services/summaryService';
 import { authAPI, profileAPI, sessionAPI, vocabularyAPI } from './services/apiService';
 
 const defaultProfile = {
@@ -157,25 +157,25 @@ const App: React.FC = () => {
         durationStr = `${mins} min ${secs} sec`;
       }
 
-      // Generate Overview
-      const overview = await generateConversationOverview(messages);
+      // Analyze the session: overview + grammar points + learner feedback
+      const analysis = await generateSessionAnalysis(
+        messages,
+        state.userProfile.level,
+        state.userProfile.goal
+      );
 
       const summary: SessionSummary = {
-        id: Math.random().toString(),
+        id: crypto.randomUUID(),
         date: new Date(),
         level: state.userProfile.level,
         goal: state.userProfile.goal,
         coach: state.userProfile.coach,
         duration: durationStr,
-        overview: overview,
+        overview: analysis.overview,
         transcript: messages,
         vocabulary: sessionVocab,
-        grammarPoints: [],
-        feedback: {
-          strengths: [],
-          improvements: [],
-          note: '',
-        },
+        grammarPoints: analysis.grammarPoints,
+        feedback: analysis.feedback,
       };
 
       processedSessionIds.current.add(currentSessionAttemptId);

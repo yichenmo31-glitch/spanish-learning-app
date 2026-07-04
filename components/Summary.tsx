@@ -44,6 +44,74 @@ export const Summary: React.FC<SummaryProps> = ({ summary, onFinish }) => {
             </div>
           </div>
 
+          {(summary.feedback.strengths.length > 0 ||
+            summary.feedback.improvements.length > 0 ||
+            summary.feedback.note) && (
+            <div className="mb-12 grid gap-6 md:grid-cols-2">
+              {summary.feedback.strengths.length > 0 && (
+                <div className="p-8 bg-emerald-50/60 rounded-3xl border border-emerald-100/60">
+                  <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">What went well</h3>
+                  <ul className="space-y-2.5">
+                    {summary.feedback.strengths.map((s, i) => (
+                      <li key={i} className="text-slate-700 font-medium text-sm leading-relaxed flex gap-2">
+                        <span className="text-emerald-400 font-bold">+</span>{s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {summary.feedback.improvements.length > 0 && (
+                <div className="p-8 bg-amber-50/60 rounded-3xl border border-amber-100/60">
+                  <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-4">To work on</h3>
+                  <ul className="space-y-2.5">
+                    {summary.feedback.improvements.map((s, i) => (
+                      <li key={i} className="text-slate-700 font-medium text-sm leading-relaxed flex gap-2">
+                        <span className="text-amber-400 font-bold">→</span>{s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {summary.feedback.note && (
+                <div className="md:col-span-2 p-6 bg-slate-900 rounded-3xl text-center">
+                  <p className="text-slate-100 font-medium leading-relaxed text-sm">{summary.feedback.note}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {summary.grammarPoints.length > 0 && (
+            <div className="mb-12">
+              <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Grammar Points</h3>
+              <div className="flex flex-wrap gap-2">
+                {summary.grammarPoints.map((g, i) => (
+                  <span key={i} className="px-4 py-2 bg-slate-50 border border-slate-200/60 rounded-full text-slate-700 font-semibold text-xs">
+                    {g}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {summary.vocabulary.length > 0 && (
+            <div className="mb-12">
+              <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Vocabulary from this session</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {summary.vocabulary.map((w, i) => (
+                  <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100/60">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-bold text-slate-900">{w.word}</span>
+                      <span className="text-slate-500 text-sm font-medium">{w.translation}</span>
+                    </div>
+                    {w.example && (
+                      <p className="mt-1.5 text-xs text-slate-500 italic leading-relaxed">{w.example}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <section>
             <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
               <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
