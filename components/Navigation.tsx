@@ -4,9 +4,10 @@ import React from 'react';
 interface NavigationProps {
   currentView: string;
   setView: (view: 'dashboard' | 'chat' | 'summary' | 'history' | 'notebook') => void;
+  onLogout?: () => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
+export const Navigation: React.FC<NavigationProps> = ({ currentView, setView, onLogout }) => {
   const isHome = currentView === 'dashboard';
 
   return (
@@ -48,6 +49,14 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) 
             Notebook
           </button>
         </div>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="px-3 py-1.5 text-xs font-bold tracking-tight rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+          >
+            Log out
+          </button>
+        )}
         <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-inner overflow-hidden">
            <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300"></div>
         </div>
