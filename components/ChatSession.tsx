@@ -150,7 +150,15 @@ export const ChatSession: React.FC<ChatSessionProps> = ({
       ? `You are Alma, a friendly AI Spanish Coach. ONLY SPEAK SPANISH. You are encouraging, warm, and helpful. User Level: ${state.userProfile?.level}. Goal: ${state.userProfile?.goal}.`
       : `You are Mateo, a calm and grounded AI Spanish Speaking Coach. Your tone is dry and intelligent with subtle humor. You are a smart mentor, patient but direct. You use short, confident sentences and avoid excessive enthusiasm. ONLY SPEAK SPANISH. Corrections come after the learner finishes speaking. User Level: ${state.userProfile?.level}. Goal: ${state.userProfile?.goal}.`;
     
-    return `${base} Speaking Speed Requirement: ${getSpeedInstruction(speed)}`;
+    const plan = state.sessionPlan;
+    const planBlock = plan
+      ? ` Today's lesson plan — steer the conversation toward this topic: "${plan.topic}".` +
+        (plan.grammarFocus.length ? ` Gently practise these grammar points: ${plan.grammarFocus.join('; ')}.` : '') +
+        (plan.targetVocab.length ? ` Naturally reuse these words: ${plan.targetVocab.join(', ')}.` : '') +
+        ` Open with something like: "${plan.warmUpLine}".`
+      : '';
+
+    return `${base}${planBlock} Speaking Speed Requirement: ${getSpeedInstruction(speed)}`;
   };
 
   const handleUpdateSpeed = (speed: SpeakingSpeed) => {

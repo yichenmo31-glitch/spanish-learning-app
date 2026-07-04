@@ -187,6 +187,72 @@ interface WordPayload {
   pronunciation: string;
 }
 
+// ---------------------------------------------------------------------------
+// Insights — the "tools" the learning-planner agent reasons over.
+// These are plain Supabase reads (not a vector store): the agent's context is
+// the learner's own history, weak spots, and vocabulary.
+// ---------------------------------------------------------------------------
+export const insightsAPI = {
+  /**
+   * Aggregates recurring weak spots from recent sessions: the most frequently
+   * repeated "improvements" notes and grammar points.
+   */
+  async getRecurringMistakes(limit = 6): Promise<string[]> {
+    const userId = await requireUserId();
+    if (!userId) return [];
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('feedback, grammar_points, date')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(12);
+
+    if (error) throw error;
+
+    const counts = new Map<string, number>();
+    for (const row of data ?? []) {
+      const improvements: string[] = (row as any).feedback?.improvements ?? [];
+      const grammar: string[] = (row as any).grammar_points ?? [];
+      for (const item of [...improvements, ...grammar]) {
+        const key = item.trim();
+        if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([item]) => item);
+  },
+
+  /**
+   * Returns vocabulary worth reviewing. Until spaced-repetition scheduling
+   * lands (adds due dates), this simply returns the least-recently-added words.
+   */
+  async getDueVocab(limit = 8): Promise<WordDefinition[]> {
+    const userId = await requireUserId();
+    if (!userId) return [];
+
+    const { data, error } = await supabase
+      .from('vocabulary')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return (data ?? []).map((row: any) => ({
+      word: row.word,
+      translation: row.translation,
+      example: row.example,
+      exampleTranslation: row.example_translation ?? undefined,
+      pronunciation: row.pronunciation,
+    }));
+  },
+};
+
 export const vocabularyAPI = {
   async getNotebook(): Promise<{ notebook: WordDefinition[] }> {
     const userId = await requireUserId();

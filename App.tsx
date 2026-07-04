@@ -6,8 +6,10 @@ import { Summary } from './components/Summary';
 import { History } from './components/History';
 import { Notebook } from './components/Notebook';
 import { Dashboard } from './components/Dashboard';
+import { PreSession } from './components/PreSession';
 import Auth from './components/Auth';
 import { generateSessionAnalysis } from './services/summaryService';
+import { generateSessionPlan } from './services/plannerAgent';
 import { authAPI, profileAPI, sessionAPI, vocabularyAPI } from './services/apiService';
 
 const defaultProfile = {
@@ -28,6 +30,7 @@ const App: React.FC = () => {
       view: 'dashboard',
       userProfile: profile,
       activeSession: null,
+      sessionPlan: null,
       history: [],
       notebook: [],
     };
@@ -35,6 +38,8 @@ const App: React.FC = () => {
 
   // Guard to prevent concurrent session ending processes
   const [isEndingSession, setIsEndingSession] = useState(false);
+  // True while the learning-planner agent is preparing the next session's plan
+  const [isPlanning, setIsPlanning] = useState(false);
   // Track processed session IDs to ensure idempotency
   const processedSessionIds = useRef<Set<string>>(new Set());
 
@@ -116,6 +121,7 @@ const App: React.FC = () => {
         view: 'dashboard',
         userProfile: { ...defaultProfile },
         activeSession: null,
+        sessionPlan: null,
         history: [],
         notebook: [],
       });
@@ -129,7 +135,20 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleStartSession = () => {
+  // Start of the session flow: show the plan screen and kick off the planner agent.
+  const handleStartSession = async () => {
+    setState(prev => ({ ...prev, view: 'presession', sessionPlan: null }));
+    setIsPlanning(true);
+    try {
+      const plan = await generateSessionPlan(state.userProfile.level, state.userProfile.goal);
+      setState(prev => (prev.view === 'presession' ? { ...prev, sessionPlan: plan } : prev));
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  // Learner confirmed the plan — enter the live conversation.
+  const handleEnterClassroom = () => {
     setState(prev => ({ ...prev, view: 'chat' }));
   };
 
@@ -277,6 +296,17 @@ const App: React.FC = () => {
             onViewHistory={() => setView('history')}
             onViewNotebook={() => setView('notebook')}
             onReviewSession={reviewSession}
+          />
+        )}
+
+        {state.view === 'presession' && (
+          <PreSession
+            level={state.userProfile.level}
+            goal={state.userProfile.goal}
+            coachName={state.userProfile.coach}
+            plan={state.sessionPlan}
+            loading={isPlanning}
+            onStart={handleEnterClassroom}
           />
         )}
 

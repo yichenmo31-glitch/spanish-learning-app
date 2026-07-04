@@ -46,14 +46,23 @@ export interface SessionSummary {
   };
 }
 
+export interface SessionPlan {
+  topic: string;
+  rationale: string;
+  targetVocab: string[];
+  grammarFocus: string[];
+  warmUpLine: string;
+}
+
 export interface AppState {
-  view: 'dashboard' | 'chat' | 'summary' | 'history' | 'notebook';
+  view: 'dashboard' | 'presession' | 'chat' | 'summary' | 'history' | 'notebook';
   userProfile: {
     level: LearningLevel;
     goal: LearningGoal;
     coach: 'alma' | 'mateo';
   };
   activeSession: SessionSummary | null;
+  sessionPlan: SessionPlan | null;
   history: SessionSummary[];
   notebook: WordDefinition[];
 }
