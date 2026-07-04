@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SessionSummary } from './types';
+import { SessionSummary } from '../types';
 
 interface HistoryProps {
   history: SessionSummary[];

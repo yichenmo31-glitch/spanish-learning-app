@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { SessionSummary } from './types';
+import { SessionSummary } from '../types';
 
 interface SummaryProps {
   summary: SessionSummary;

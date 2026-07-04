@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { WordDefinition } from './types';
+import { WordDefinition } from '../types';
 
 interface NotebookProps {
   words: WordDefinition[];

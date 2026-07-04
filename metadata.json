@@ -3,5 +3,6 @@
   "description": "A voice-based AI Spanish learning application that helps users gain confidence through guided, friendly, and real-time conversations.",
   "requestFramePermissions": [
     "microphone"
-  ]
+  ],
+  "majorCapabilities": []
 }

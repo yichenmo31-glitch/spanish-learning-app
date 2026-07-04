@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { WordDefinition, LearningLevel } from "./types";
+import { WordDefinition, LearningLevel } from "../types";
 
 export interface WordExplanation extends WordDefinition {
   audioBase64?: string;
@@ -8,15 +8,11 @@ export interface WordExplanation extends WordDefinition {
 }
 
 export async function getWordExplanation(word: string, level: LearningLevel): Promise<WordExplanation> {
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) {
-    throw new Error('Google GenAI API key is not set');
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   // 1. Get Text Explanation
   const textResponse = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
+    model: "gemini-3-flash-preview",
     contents: `Explain the Spanish word "${word}" for a ${level} level learner.
     Return a JSON object with:
     - meaning: A simple English explanation of the word.
@@ -39,7 +35,7 @@ export async function getWordExplanation(word: string, level: LearningLevel): Pr
   });
 
   const data = JSON.parse(textResponse.text || "{}");
-
+  
   return {
     word: word,
     translation: data.meaning,
@@ -50,13 +46,9 @@ export async function getWordExplanation(word: string, level: LearningLevel): Pr
 }
 
 export async function regenerateExample(word: string, currentExample: string, level: LearningLevel) {
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) {
-    throw new Error('Google GenAI API key is not set');
-  }
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
+    model: "gemini-3-flash-preview",
     contents: `Generate a NEW, different Spanish example sentence for the word "${word}" (Level: ${level}).
     Current example to avoid: "${currentExample}".
     Return a JSON object with:
@@ -78,11 +70,7 @@ export async function regenerateExample(word: string, currentExample: string, le
 }
 
 export async function getSpanishTTS(text: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) {
-    throw new Error('Google GenAI API key is not set');
-  }
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
     contents: [{ parts: [{ text: `Say clearly in Spanish: ${text}` }] }],

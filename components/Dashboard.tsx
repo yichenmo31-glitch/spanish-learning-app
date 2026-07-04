@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AppState, SessionSummary } from './types';
+import { AppState, SessionSummary } from '../types';
 
 interface DashboardProps {
   state: AppState;
