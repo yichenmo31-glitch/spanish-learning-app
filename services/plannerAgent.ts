@@ -65,15 +65,23 @@ async function buildPlanWithLLM(
   return buildHeuristicPlan(level, goal, mistakes, dueVocab);
 }
 
+interface PlanContext {
+  mistakes: string[];
+  dueVocab: WordDefinition[];
+}
+
 export async function generateSessionPlan(
   level: LearningLevel,
-  goal: LearningGoal
+  goal: LearningGoal,
+  context?: PlanContext
 ): Promise<SessionPlan> {
   try {
-    const [mistakes, dueVocab] = await Promise.all([
-      insightsAPI.getRecurringMistakes(),
-      insightsAPI.getDueVocab(),
-    ]);
+    // Demo mode (and tests) can pass context directly; otherwise read the
+    // learner's own data from Supabase via the tool functions.
+    const { mistakes, dueVocab } = context ?? {
+      mistakes: await insightsAPI.getRecurringMistakes(),
+      dueVocab: await insightsAPI.getDueVocab(),
+    };
     return await buildPlanWithLLM(level, goal, mistakes, dueVocab);
   } catch (error) {
     console.error('Failed to generate session plan:', error);

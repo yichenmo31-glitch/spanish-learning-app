@@ -3,9 +3,10 @@ import { authAPI } from '../services/apiService';
 
 interface AuthProps {
   onAuthSuccess: () => void;
+  onDemo?: () => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
+const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onDemo }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -122,6 +123,17 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               : 'Sign up'}
           </button>
         </form>
+
+        {onDemo && (
+          <button
+            type="button"
+            onClick={onDemo}
+            className="w-full mt-4 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-sm font-bold tracking-tight hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Watch the demo — no sign-up
+          </button>
+        )}
 
         <p className="text-center text-sm text-slate-500 mt-5">
           {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}

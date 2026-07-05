@@ -8,9 +8,20 @@ import { Notebook } from './components/Notebook';
 import { Dashboard } from './components/Dashboard';
 import { PreSession } from './components/PreSession';
 import Auth from './components/Auth';
+import { DemoChat } from './components/DemoChat';
 import { generateSessionAnalysis } from './services/summaryService';
 import { generateSessionPlan } from './services/plannerAgent';
 import { authAPI, profileAPI, sessionAPI, vocabularyAPI } from './services/apiService';
+import {
+  demoProfile,
+  demoHistory,
+  demoNotebook,
+  demoMistakes,
+  demoDueVocab,
+  demoScript,
+  demoSessionVocab,
+  demoAnalysis,
+} from './services/demoData';
 
 const defaultProfile = {
   level: LearningLevel.BEGINNER,
@@ -21,6 +32,8 @@ const defaultProfile = {
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  // Guided demo: everything runs on in-memory sample data, no backend / LLM / mic.
+  const [isDemo, setIsDemo] = useState<boolean>(false);
 
   const [state, setState] = useState<AppState>(() => {
     const savedProfile = localStorage.getItem('alma_profile');
@@ -76,14 +89,30 @@ const App: React.FC = () => {
 
   // Keep the backend profile in sync (and mirror to localStorage as a backup).
   useEffect(() => {
-    if (state.userProfile && isAuthenticated) {
+    if (state.userProfile && isAuthenticated && !isDemo) {
       profileAPI
         .updateProfile(state.userProfile.level, state.userProfile.goal, state.userProfile.coach)
         .catch(error => console.error('Failed to update profile:', error));
 
       localStorage.setItem('alma_profile', JSON.stringify(state.userProfile));
     }
-  }, [state.userProfile, isAuthenticated]);
+  }, [state.userProfile, isAuthenticated, isDemo]);
+
+  // Enter the guided demo: load sample data, no login required.
+  const handleStartDemo = () => {
+    setIsDemo(true);
+    setIsAuthenticated(true);
+    setLoading(false);
+    processedSessionIds.current.clear();
+    setState({
+      view: 'dashboard',
+      userProfile: { ...demoProfile },
+      activeSession: null,
+      sessionPlan: null,
+      history: demoHistory,
+      notebook: demoNotebook,
+    });
+  };
 
   // After a successful login/registration, reload the user's data.
   const handleAuthSuccess = async () => {
@@ -110,11 +139,12 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await authAPI.logout();
+      if (!isDemo) await authAPI.logout();
     } catch (error) {
       console.error('Failed to logout:', error);
     } finally {
       localStorage.removeItem('alma_profile');
+      setIsDemo(false);
       setIsAuthenticated(false);
       processedSessionIds.current.clear();
       setState({
@@ -140,7 +170,10 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, view: 'presession', sessionPlan: null }));
     setIsPlanning(true);
     try {
-      const plan = await generateSessionPlan(state.userProfile.level, state.userProfile.goal);
+      // In demo mode feed the planner the sample context so it produces a
+      // personalized plan without hitting Supabase.
+      const context = isDemo ? { mistakes: demoMistakes, dueVocab: demoDueVocab } : undefined;
+      const plan = await generateSessionPlan(state.userProfile.level, state.userProfile.goal, context);
       setState(prev => (prev.view === 'presession' ? { ...prev, sessionPlan: plan } : prev));
     } finally {
       setIsPlanning(false);
@@ -150,6 +183,38 @@ const App: React.FC = () => {
   // Learner confirmed the plan — enter the live conversation.
   const handleEnterClassroom = () => {
     setState(prev => ({ ...prev, view: 'chat' }));
+  };
+
+  // Demo session end: skip the LLM + backend, use the canned analysis.
+  const handleEndDemoSession = (messages: ChatMessage[]) => {
+    const summary: SessionSummary = {
+      id: crypto.randomUUID(),
+      date: new Date(),
+      level: state.userProfile.level,
+      goal: state.userProfile.goal,
+      coach: state.userProfile.coach,
+      duration: '4 min 30 sec',
+      overview: demoAnalysis.overview,
+      transcript: messages,
+      vocabulary: demoSessionVocab,
+      grammarPoints: demoAnalysis.grammarPoints,
+      feedback: demoAnalysis.feedback,
+    };
+    setState(prev => {
+      const mergedNotebook = [...prev.notebook];
+      for (const w of demoSessionVocab) {
+        if (!mergedNotebook.some(x => x.word.toLowerCase() === w.word.toLowerCase())) {
+          mergedNotebook.unshift(w);
+        }
+      }
+      return {
+        ...prev,
+        activeSession: summary,
+        history: [summary, ...prev.history],
+        notebook: mergedNotebook,
+        view: 'summary',
+      };
+    });
   };
 
   const handleEndSession = async (messages: ChatMessage[], sessionVocab: WordDefinition[]) => {
@@ -244,7 +309,7 @@ const App: React.FC = () => {
       };
     });
 
-    if (isNew && isAuthenticated) {
+    if (isNew && isAuthenticated && !isDemo) {
       try {
         await vocabularyAPI.addWord({
           word: word.word,
@@ -276,18 +341,24 @@ const App: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />;
+    return <Auth onAuthSuccess={handleAuthSuccess} onDemo={handleStartDemo} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 font-sans">
+      {isDemo && (
+        <div className="fixed top-14 left-0 right-0 z-40 bg-blue-600 text-white text-xs font-bold tracking-wide px-6 py-2 flex items-center justify-center gap-3">
+          <span>Demo mode · sample data — no live AI or microphone</span>
+          <button onClick={handleLogout} className="underline underline-offset-2 hover:text-blue-100">Exit demo</button>
+        </div>
+      )}
       <Navigation
         currentView={state.view}
         setView={setView}
         onLogout={handleLogout}
       />
 
-      <main className="container mx-auto pb-12">
+      <main className={`container mx-auto pb-12 ${isDemo ? 'pt-8' : ''}`}>
         {state.view === 'dashboard' && (
           <Dashboard
             state={state}
@@ -310,7 +381,15 @@ const App: React.FC = () => {
           />
         )}
 
-        {state.view === 'chat' && (
+        {state.view === 'chat' && isDemo && (
+          <DemoChat
+            script={demoScript}
+            coachName={state.userProfile.coach}
+            onFinish={handleEndDemoSession}
+          />
+        )}
+
+        {state.view === 'chat' && !isDemo && (
           <ChatSession
             state={state}
             isEnding={isEndingSession}
